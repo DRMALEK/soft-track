@@ -10,7 +10,7 @@ import {
 } from '@/api/generated/endpoints/admin/admin'
 import { useGetNotificationSettingsNotificationsSettingsGet } from '@/api/generated/endpoints/notifications/notifications'
 import { useListDepartmentsDepartmentsGet } from '@/api/generated/endpoints/departments/departments'
-import { AdminRole, type AdminUserRead, type AdminUserUpdate } from '@/api/generated/models'
+import { AdminRole, type AdminUserRead, type AdminUserUpdate, EmploymentType } from '@/api/generated/models'
 import { parseServerDate } from '@/api/dates'
 import { errorDetail } from '@/api/errors'
 import { useAuth } from '@/auth/useAuth'
@@ -737,6 +737,15 @@ function GrantFinanceDialog({
   )
 }
 
+/** #247's employment types, in the order the editor offers them. */
+const EMPLOYMENT_TYPES = [
+  EmploymentType.employee,
+  EmploymentType.contractor,
+  EmploymentType.intern,
+  EmploymentType.external,
+  EmploymentType.service_account,
+] as const
+
 /**
  * The facts the organisation owns about someone (#122-#124), set inline on
  * their row. Title and location are not here: those are the person's to say,
@@ -761,7 +770,11 @@ function OrganisationEditor({
   const [manager, setManager] = useState<PersonOption | null>(target.manager ?? null)
   const [managerSearch, setManagerSearch] = useState('')
   const [startedOn, setStartedOn] = useState(target.started_on ?? '')
+  const [employmentType, setEmploymentType] = useState<EmploymentType | ''>(
+    target.employment_type ?? '',
+  )
   const [error, setError] = useState<string | null>(null)
+  const employmentHintId = useId()
 
   const managerQuery = useDebounced(managerSearch, 200)
   const candidates = useListUsersAdminUsersGet({ q: managerQuery || undefined, limit: 8 })
@@ -778,6 +791,10 @@ function OrganisationEditor({
       department_id: departmentId ? Number(departmentId) : null,
       manager_id: manager?.id ?? null,
       started_on: startedOn || null,
+      // Sent only when changed: an account with no type keeps none.
+      ...(employmentType && employmentType !== target.employment_type
+        ? { employment_type: employmentType }
+        : {}),
     }
     try {
       await updateUser.mutateAsync({ userId: target.id, data })
@@ -838,6 +855,31 @@ function OrganisationEditor({
             className="field field-sm"
           />
         </label>
+        <div className="sm:col-span-3">
+          <label className="block sm:max-w-[calc((100%-1.5rem)/3)]">
+            <span className="mb-1 block text-xs font-medium text-neutral-500">
+              {t('adminUsers.editor.employmentType')}
+            </span>
+            <Select
+              dense
+              block
+              value={employmentType}
+              aria-describedby={employmentHintId}
+              onChange={(e) => setEmploymentType(e.target.value as EmploymentType)}
+            >
+              {/* No type yet: nothing chosen, and nothing to choose back. */}
+              <option value="" disabled hidden />
+              {EMPLOYMENT_TYPES.map((kind) => (
+                <option key={kind} value={kind}>
+                  {t(`adminUsers.editor.employmentTypes.${kind}`)}
+                </option>
+              ))}
+            </Select>
+          </label>
+          <p id={employmentHintId} className="mt-1 text-xs text-neutral-400">
+            {t('adminUsers.editor.employmentTypeHint')}
+          </p>
+        </div>
       </div>
       {error && (
         <p

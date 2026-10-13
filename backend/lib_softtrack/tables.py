@@ -610,6 +610,22 @@ class Department(SQLModel, table=True):
     created_at: datetime = Field(default_factory=utcnow)
 
 
+class EmploymentType(str, enum.Enum):
+    """What kind of account or engagement somebody has with the organisation
+    (#247, #320).
+
+    An account with no type, or an employee, is on payroll. The others are on
+    payroll only when finance switches their type on
+    (`InstanceSettings.payroll_types`) -- except external, which never is.
+    """
+
+    employee = "employee"
+    contractor = "contractor"
+    intern = "intern"
+    external = "external"
+    service_account = "service_account"
+
+
 class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     email: str = Field(index=True, unique=True)
@@ -714,6 +730,12 @@ class User(SQLModel, table=True):
     #: the epics it was given there and nothing else (`lib_softtrack/
     #: outside.py`). Never a site or finance admin.
     is_external: bool = Field(default=False)
+    #: What kind of account this is (#320). None behaves as an employee. Not
+    #: an access-control flag: `is_external` is, and the two are not synced.
+    employment_type: Optional[EmploymentType] = Field(
+        default=None,
+        nullable=True,
+    )
 
     # --- Prepared by a site admin (#303) -----------------------------------
 
@@ -2414,6 +2436,11 @@ class InstanceSettings(SQLModel, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     team_creation: TeamCreationPolicy = Field(default=TeamCreationPolicy.anyone)
+    #: Employment types finance has put on payroll besides employees (#320),
+    #: read through `lib_finance.on_payroll`. Never `external`.
+    payroll_types: list[str] = Field(
+        default_factory=list, sa_column=Column(JSONValue, nullable=False)
+    )
     updated_at: datetime = Field(default_factory=utcnow)
 
 
