@@ -1054,9 +1054,9 @@ class Team(SQLModel, table=True):
     #: organisation -- joins it as a member without asking (#259). Off unless
     #: a team admin turns it on.
     open_to_join: bool = Field(default=False)
-    #: When a site admin archived it from Administration -> Teams (#307);
-    #: null for a team in use. What being archived does to the team itself
-    #: -- read-only, out of the switcher and the pickers -- is #322's.
+    #: When it was archived, by a site admin from Administration -> Teams
+    #: (#307) or by a team admin from its settings (#322); null for a team in
+    #: use. An archived team is read-only (`require_team_not_archived`).
     archived_at: Optional[datetime] = None
 
 
@@ -2442,6 +2442,22 @@ class InstanceSettings(SQLModel, table=True):
         default_factory=list, sa_column=Column(JSONValue, nullable=False)
     )
     updated_at: datetime = Field(default_factory=utcnow)
+
+
+class RetiredTeamKey(SQLModel, table=True):
+    """The key of a deleted team that had given out identifiers (#322).
+
+    A team is deleted only when it has no tickets, but it may have had them:
+    moved to another team, or purged from the trash. `ENG-42` is then still
+    in commit messages, chat logs and a "Moved from ENG-42" comment, and a
+    new team keyed ENG would make it point at somebody else's work -- the
+    reason a key cannot be changed, and an archived team's cannot be reused.
+    A team deleted before its first ticket left no identifier anywhere, and
+    its key is free again.
+    """
+
+    key: str = Field(primary_key=True)
+    retired_at: datetime = Field(default_factory=utcnow)
 
 
 class TeamCreator(SQLModel, table=True):

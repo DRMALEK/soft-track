@@ -26,4 +26,5 @@ export interface TeamUpdate {
   capacity_minutes_per_day?: number | null;
   listed?: boolean | null;
   open_to_join?: boolean | null;
+  archived?: boolean | null;
 }
