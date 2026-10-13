@@ -160,6 +160,9 @@ class Settings(BaseSettings):
     #: A day on the timesheet with more than this many hours logged is
     #: marked (#267), as one with nothing logged is.
     timesheet_long_day_hours: int = Field(default=10, ge=1, le=24)
+    #: Blank hides /metrics entirely. Set a high-entropy token and scrape with
+    #: `Authorization: Bearer <token>` to expose Prometheus metrics.
+    metrics_token: str = ""
 
     model_config = SettingsConfigDict(env_file=".env")
 

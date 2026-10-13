@@ -2,7 +2,7 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Header
 from fastapi.openapi.utils import get_openapi
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -24,6 +24,11 @@ from lib_identity.identity import warm_password_hasher
 from lib_softtrack import outside, realtime, trash
 from lib_softtrack.deleting import trash_loop
 from lib_softtrack.digest import digest_loop
+from lib_softtrack.metrics import (
+    PrometheusMiddleware,
+    check_metrics_token,
+    metrics_response,
+)
 from lib_softtrack.outbound import webhook_loop
 from lib_softtrack.reminders import reminder_loop
 from lib_softtrack.schedules import schedule_loop
@@ -181,6 +186,7 @@ app.add_middleware(
 )
 # Who is asking, for the people in a response (#317): see lib_utils/viewer.py.
 app.add_middleware(ViewerScope)
+app.add_middleware(PrometheusMiddleware)
 
 
 app.include_router(identity_router)
@@ -233,3 +239,9 @@ app.include_router(finance_reports_router)
 @app.get("/health", tags=["health"])
 def health():
     return {"status": "ok"}
+
+
+@app.get("/metrics", include_in_schema=False)
+async def metrics(authorization: str | None = Header(default=None)):
+    check_metrics_token(authorization, settings.metrics_token)
+    return metrics_response()
