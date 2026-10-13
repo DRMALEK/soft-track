@@ -43,8 +43,13 @@ NOT_TEAM_WRITES = {
     ("POST", "/auth/oauth/{provider}/link-ticket"): "your own account",
     ("POST", "/auth/oauth/link"): "your own account",
     ("DELETE", "/auth/me/identities/{provider}"): "your own account",
+    ("POST", "/auth/totp/verify"): "no team involved",
+    ("POST", "/auth/totp/enrol"): "your own account",
+    ("POST", "/auth/totp/confirm"): "your own account",
+    ("POST", "/auth/totp/disable"): "your own account",
     ("PATCH", "/admin/users/{user_id}"): "site admins, not team roles",
     ("POST", "/admin/users/{user_id}/reset-password"): "site admins, not team roles",
+    ("POST", "/admin/users/{user_id}/clear-totp"): "site admins, not team roles",
     ("POST", "/admin/users/{user_id}/end-sessions"): "site admins, not team roles",
     # Accounts a site admin creates (#303).
     ("POST", "/admin/users"): "site admins, not team roles",

@@ -17,7 +17,7 @@ from sqlmodel import Session, col, func, or_, select
 from lib_finance import access as finance_access
 from lib_identity import accounts, api_tokens, managers, sessions
 from lib_identity.departments import require_department
-from lib_identity.identity import get_current_user
+from lib_identity.identity import clear_totp, get_current_user
 from lib_identity.models.admin import (
     AdminRole,
     AdminUserRead,
@@ -413,6 +413,20 @@ def reset_password(
             "their link again instead.",
         )
     user.hashed_password = hash_password(new_password)
+    user.token_version += 1
+    session.add(user)
+    session.commit()
+
+
+def admin_clear_totp(session: Session, actor: User, user_id: int) -> None:
+    """Turn two-factor off for someone who has lost their authenticator.
+
+    Unconditional, and clears a half-finished setup as well: an escape hatch
+    that only opens in the expected state is not one. Their sessions end
+    either way, as with a password reset.
+    """
+    user = get_user_or_404(session, user_id)
+    clear_totp(user)
     user.token_version += 1
     session.add(user)
     session.commit()

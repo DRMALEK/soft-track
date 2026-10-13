@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { type FormEvent, useId, useState } from 'react'
 
 import {
+  useClearTotpAdminUsersUserIdClearTotpPost,
   useEndSessionsAdminUsersUserIdEndSessionsPost,
   useListUsersAdminUsersGet,
   useNewWelcomeLinkAdminUsersUserIdWelcomeLinkPost,
@@ -144,6 +145,22 @@ export default function AdminUsersPage() {
       setNotice(t('adminUsers.sessionsEnded', { name: target.full_name }))
     } catch (err: unknown) {
       setError(errorDetail(err, t('adminUsers.errors.update')))
+    }
+  }
+
+  const clearTotp = useClearTotpAdminUsersUserIdClearTotpPost()
+
+  // For someone who has lost their authenticator and their recovery codes.
+  const onClearTotp = async (target: AdminUserRead) => {
+    if (!window.confirm(t('adminUsers.confirmClearTotp', { name: target.full_name }))) {
+      return
+    }
+    setError(null)
+    try {
+      await clearTotp.mutateAsync({ userId: target.id })
+      refresh()
+    } catch (err: unknown) {
+      setError(errorDetail(err, t('adminUsers.errors.clearTotp')))
     }
   }
 
@@ -453,7 +470,7 @@ export default function AdminUsersPage() {
                     )}
                   </div>
 
-                  {/* One group, so the three actions wrap together onto a
+                  {/* One group, so the actions wrap together onto a
                       second line rather than one being orphaned below. */}
                   <div className="flex flex-wrap items-center gap-1">
                     <button
@@ -547,6 +564,16 @@ export default function AdminUsersPage() {
                         >
                           {t('adminUsers.resetPassword')}
                         </button>
+                        {row.totp_enabled && (
+                          <button
+                            type="button"
+                            onClick={() => onClearTotp(row)}
+                            disabled={clearTotp.isPending}
+                            className="btn btn-ghost btn-sm"
+                          >
+                            {t('adminUsers.clearTotp')}
+                          </button>
+                        )}
                         {/* From outside the organisation (#243): set here or on
                         the invitation, never by the person, and never for an
                         admin of any kind. */}

@@ -29,6 +29,7 @@ export interface UserMe {
   is_finance_admin: boolean;
   has_password: boolean;
   created_at: string;
+  totp_enabled: boolean;
   employment_type?: EmploymentType | null;
   job_title?: string | null;
   location?: string | null;
